@@ -12,12 +12,14 @@ function scrapeAmazonSummary() {
 }
 
 function scrapeOrderCard(card) {
+	const detailUrl = getDetailUrl(card);
+
 	return {
-		orderNumber: getOrderNumber(card),
+		orderNumber: getOrderNumber(card) ?? orderNumberFromDetailUrl(detailUrl),
 		orderDate: getOrderDate(card),
 		total: getOrderTotal(card),
 		status: getOrderStatus(card),
-		detailUrl: getDetailUrl(card),
+		detailUrl,
 	};
 }
 
@@ -31,6 +33,18 @@ function getOrderNumber(card) {
 	const match = element.textContent.match(/\b\d{3}-\d{7}-\d{7}\b/);
 
 	return match ? match[0] : null;
+}
+
+function orderNumberFromDetailUrl(detailUrl) {
+	if (!detailUrl) {
+		return null;
+	}
+
+	try {
+		return new URL(detailUrl).searchParams.get('orderID');
+	} catch {
+		return null;
+	}
 }
 
 function getOrderDate(card) {

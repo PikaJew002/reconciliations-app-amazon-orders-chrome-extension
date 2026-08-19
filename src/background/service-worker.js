@@ -161,7 +161,11 @@ async function submitImport(payload) {
 	}
 
 	const summaryOrders = (payload.summary?.orders ?? []).filter((order) =>
-		details.some((detail) => detail.orderNumber === order.orderNumber),
+		details.some(
+			(detail) =>
+				(detail.orderNumber && detail.orderNumber === order.orderNumber) ||
+				(detail.url && detail.url === order.detailUrl),
+		),
 	);
 
 	const submitPayload = {
@@ -178,7 +182,9 @@ async function submitImport(payload) {
 
 	const pendingRows = details.map((detail) => {
 		const summaryOrder = summaryOrders.find(
-			(order) => order.orderNumber === detail.orderNumber,
+			(order) =>
+				order.orderNumber === detail.orderNumber ||
+				order.detailUrl === detail.url,
 		);
 
 		return {

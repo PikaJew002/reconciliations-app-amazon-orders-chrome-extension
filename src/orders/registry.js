@@ -13,13 +13,15 @@ export async function markOrdersPending(orders) {
 	const submittedAt = new Date().toISOString();
 
 	for (const order of orders) {
-		if (!order.orderNumber) {
+		const orderNumber = resolveOrderNumber(order);
+
+		if (!orderNumber) {
 			continue;
 		}
 
-		const existing = registry[order.orderNumber] ?? {};
+		const existing = registry[orderNumber] ?? {};
 
-		registry[order.orderNumber] = {
+		registry[orderNumber] = {
 			...existing,
 			status: 'pending',
 			submittedAt,
@@ -35,6 +37,24 @@ export async function markOrdersPending(orders) {
 	return registry;
 }
 
+export function orderNumberFromDetailUrl(detailUrl) {
+	if (!detailUrl) {
+		return null;
+	}
+
+	try {
+		return new URL(detailUrl).searchParams.get('orderID');
+	} catch {
+		return null;
+	}
+}
+
+export function resolveOrderNumber(order) {
+	return (
+		orderNumberFromDetailUrl(order?.detailUrl) ?? order?.orderNumber ?? null
+	);
+}
+
 export function classifySummaryOrders(registry, orders) {
 	const catalogued = [];
 	const pending = [];
@@ -42,7 +62,10 @@ export function classifySummaryOrders(registry, orders) {
 	const toScrape = [];
 
 	for (const order of orders) {
-		const row = order.orderNumber ? registry[order.orderNumber] : null;
+		const orderNumber = resolveOrderNumber(order);
+		const row = orderNumber
+			? registry[orderNumber]
+			: findRowByDetailUrl(registry, order.detailUrl);
 
 		if (!row) {
 			toScrape.push(order);
@@ -112,6 +135,26 @@ export function getFailedOrders(registry) {
 			orderNumber,
 			...row,
 		}));
+}
+
+function findRowByDetailUrl(registry, detailUrl) {
+	const orderId = orderNumberFromDetailUrl(detailUrl);
+
+	if (orderId && registry[orderId]) {
+		return registry[orderId];
+	}
+
+	if (!detailUrl) {
+		return null;
+	}
+
+	return (
+		Object.values(registry).find((row) => {
+			return (
+				orderNumberFromDetailUrl(row.detailUrl) === orderId && orderId
+			);
+		}) ?? null
+	);
 }
 
 export function buildRegistryState(registry) {
