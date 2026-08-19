@@ -33,7 +33,7 @@ if (
 	if (reconciliationsToken) {
 		connected = true;
 		connectButton.style.display = 'none';
-		statusElement.textContent = 'Connected to Reconciliations.';
+		statusElement.textContent = 'Connected to Spendable.';
 	}
 
 	try {
@@ -108,11 +108,11 @@ connectButton.addEventListener('click', async () => {
 	statusElement.textContent = 'Connecting...';
 
 	try {
-		await connectToReconciliations();
+		await connectToSpendable();
 
 		connected = true;
 		connectButton.style.display = 'none';
-		statusElement.textContent = 'Connected to Reconciliations.';
+		statusElement.textContent = 'Connected to Spendable.';
 
 		renderRegistryState(await sendRuntimeMessage({ type: 'RECONCILE' }));
 	} catch (error) {
@@ -320,7 +320,7 @@ function isAmazonOrdersPage(url) {
 	);
 }
 
-async function connectToReconciliations() {
+async function connectToSpendable() {
 	const redirectUri = chrome.identity.getRedirectURL('auth');
 
 	const authUrl = new URL(

@@ -151,7 +151,7 @@ async function submitImport(payload) {
 	const token = await getReconciliationsToken();
 
 	if (!token) {
-		throw new Error('Not connected to Reconciliations.');
+		throw new Error('Not connected to Spendable.');
 	}
 
 	const details = (payload.details ?? []).filter((detail) => detail.success);
