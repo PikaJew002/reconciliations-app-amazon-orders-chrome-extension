@@ -1,0 +1,29 @@
+{
+	"manifest_version": 3,
+	"name": "Amazon Order Scraper",
+	"version": "0.2.0",
+	"description": "Scrape Amazon order history and order details.",
+	"permissions": ["tabs", "identity", "storage"],
+	"host_permissions": [
+		"https://www.amazon.com/*",
+		"https://reconciliations.laravel.cloud/*"
+	],
+	"action": {
+		"default_popup": "popup.html"
+	},
+	"background": {
+		"service_worker": "src/background/service-worker.js",
+		"type": "module"
+	},
+	"content_scripts": [
+		{
+			"matches": ["https://www.amazon.com/*"],
+			"js": [
+				"src/amazon/summary.js",
+				"src/amazon/details.js",
+				"src/content.js"
+			],
+			"run_at": "document_idle"
+		}
+	]
+}
