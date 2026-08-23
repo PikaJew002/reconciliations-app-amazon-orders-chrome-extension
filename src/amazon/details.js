@@ -112,23 +112,38 @@ function parseMoney(value) {
 }
 
 function getShipments() {
-	const shipmentComponents = document.querySelectorAll(
-		'[data-component="shipments"]',
-	);
+	const shipmentsRoot = document.querySelector('[data-component="shipments"]');
 
-	return Array.from(shipmentComponents).map(getShipment);
+	if (!shipmentsRoot) {
+		return [];
+	}
+
+	const shipmentBoxes = shipmentsRoot.querySelectorAll('.a-box-group > .a-box');
+
+	const shipmentElements = shipmentBoxes.length
+		? shipmentBoxes
+		: [shipmentsRoot];
+
+	return Array.from(shipmentElements).map(getShipment);
 }
 
 function getShipment(shipmentElement) {
 	return {
 		status: getShipmentStatus(shipmentElement),
-
-		items: Array.from(
-			shipmentElement.querySelectorAll(
-				'[data-component="purchasedItems"] > .a-row > .a-fixed-left-grid',
-			),
-		).map(getItem),
+		items: getShipmentItems(shipmentElement),
 	};
+}
+
+function getShipmentItems(shipmentElement) {
+	return Array.from(
+		shipmentElement.querySelectorAll(
+			'[data-component="purchasedItems"] [data-component="itemTitle"]',
+		),
+	).map((titleElement) => {
+		return getItem(
+			titleElement.closest('.a-fixed-left-grid') ?? titleElement,
+		);
+	});
 }
 
 function getShipmentStatus(shipmentElement) {
@@ -180,15 +195,18 @@ function getItem(itemElement) {
 }
 
 function getItemQuantity(itemElement) {
-	const quantityElement = itemElement.querySelector(
-		'[data-component="itemImage"] .od-item-view-qty',
-	);
+	const quantityText =
+		itemElement.querySelector('[data-component="itemImage"] .od-item-view-qty')
+			?.textContent ??
+		itemElement.querySelector('[data-component="quantity"]')?.textContent;
 
-	if (!quantityElement) {
+	const match = quantityText?.match(/\d+/);
+
+	if (!match) {
 		return 1;
 	}
 
-	const quantity = Number.parseInt(quantityElement.textContent.trim(), 10);
+	const quantity = Number.parseInt(match[0], 10);
 
 	return Number.isFinite(quantity) ? quantity : 1;
 }
