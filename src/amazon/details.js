@@ -124,7 +124,9 @@ function getShipment(shipmentElement) {
 		status: getShipmentStatus(shipmentElement),
 
 		items: Array.from(
-			shipmentElement.querySelectorAll('[data-component="purchasedItems"]'),
+			shipmentElement.querySelectorAll(
+				'[data-component="purchasedItems"] > .a-row > .a-fixed-left-grid',
+			),
 		).map(getItem),
 	};
 }

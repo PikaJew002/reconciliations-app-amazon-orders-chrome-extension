@@ -1,5 +1,6 @@
 const scrapeButton = document.querySelector('#scrape');
 const sendToSpendableButton = document.querySelector('#send-to-spendable');
+const clearCachedOrdersButton = document.querySelector('#clear-cached-orders');
 const retryFailedButton = document.querySelector('#retry-failed');
 const statusElement = document.querySelector('#status');
 const coverageElement = document.querySelector('#coverage');
@@ -14,6 +15,7 @@ let connected = false;
 if (
 	!scrapeButton ||
 	!sendToSpendableButton ||
+	!clearCachedOrdersButton ||
 	!retryFailedButton ||
 	!statusElement ||
 	!coverageElement ||
@@ -141,6 +143,29 @@ sendToSpendableButton.addEventListener('click', async () => {
 		console.error(error);
 
 		statusElement.textContent = `Send failed: ${error.message}`;
+	} finally {
+		setBusy(false);
+	}
+});
+
+clearCachedOrdersButton.addEventListener('click', async () => {
+	setBusy(true);
+	statusElement.textContent = 'Clearing cached orders...';
+
+	try {
+		const state = await sendRuntimeMessage({
+			type: 'CLEAR_CACHED_ORDERS',
+		});
+
+		orders = {};
+		outputElement.textContent = '';
+		sendToSpendableButton.style.display = 'none';
+		renderRegistryState(state);
+		statusElement.textContent = 'Cleared cached orders.';
+	} catch (error) {
+		console.error(error);
+
+		statusElement.textContent = `Clear failed: ${error.message}`;
 	} finally {
 		setBusy(false);
 	}
@@ -303,6 +328,7 @@ function formatCoverage(coverage, pendingCount = 0) {
 function setBusy(busy) {
 	scrapeButton.disabled = busy;
 	sendToSpendableButton.disabled = busy;
+	clearCachedOrdersButton.disabled = busy;
 	retryFailedButton.disabled = busy;
 	connectButton.disabled = busy;
 }

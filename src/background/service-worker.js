@@ -3,6 +3,7 @@ import { reconcilePendingOrders } from '../orders/reconcile.js';
 import {
 	buildRegistryState,
 	classifySummaryOrders,
+	clearCachedOrders,
 	getFailedOrders,
 	markOrdersPending,
 } from '../orders/registry.js';
@@ -45,6 +46,10 @@ async function handleMessage(message) {
 
 		case 'RETRY_FAILED':
 			return retryFailedOrders();
+
+		case 'CLEAR_CACHED_ORDERS':
+			await clearCachedOrders();
+			return buildRegistryState({});
 
 		default:
 			throw new Error(`Unknown message type: ${message.type}`);

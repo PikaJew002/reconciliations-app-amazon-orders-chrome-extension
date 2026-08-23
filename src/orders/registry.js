@@ -8,6 +8,10 @@ export async function setOrderRegistry(orderRegistry) {
 	await chrome.storage.local.set({ orderRegistry });
 }
 
+export async function clearCachedOrders() {
+	await chrome.storage.local.remove('orderRegistry');
+}
+
 export async function markOrdersPending(orders) {
 	const registry = await getOrderRegistry();
 	const submittedAt = new Date().toISOString();
