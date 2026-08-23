@@ -20,16 +20,16 @@ This is a private, unpacked extension for local use. It is not published to the 
 
 Detail pages are loaded one at a time in a hidden tab, with a short random delay between visits, then that tab is closed.
 
-If you are connected to Spendable, orders that already imported successfully are skipped on later scrapes. Orders still importing are also skipped. Failed imports are scraped again.
+If you are connected to Spendable, orders that already imported successfully are skipped on later scrapes of the Your Orders page. Orders still importing are also skipped. Failed imports are scraped again. Scraping a single order’s details page always runs, even if that order is already catalogued.
 
 ## Requirements
 
 - Google Chrome (Manifest V3)
 - An Amazon.com account, signed in
-- The active tab must be `https://www.amazon.com/gp/css/order-history` or `https://www.amazon.com/your-orders/orders`
+- The active tab must be a Your Orders page (`/gp/css/order-history` or `/your-orders/orders`) or a single order’s details page (`/your-orders/order-details`)
 - Optional: a [Spendable](https://reconciliations.laravel.cloud/login) account, to import scraped orders
 
-The extension only runs on `https://www.amazon.com/*`. It does not paginate through older order history on its own; it scrapes whatever orders are currently visible on the summary page.
+The extension only runs on `https://www.amazon.com/*`. It does not paginate through older order history on its own; it scrapes whatever orders are currently visible on the summary page. You can also scrape a single order from its details page, even if that order is already catalogued.
 
 ## Load the extension
 
@@ -51,6 +51,10 @@ Chrome will keep the extension available on this machine until you remove it. Af
 3. Wait until the status reports how many orders were scraped. JSON output appears in the popup.
 
 Status includes how many orders were on the page, already catalogued in Spendable, still importing, failed, and newly scraped.
+
+### Refresh a single order
+
+If one imported order needs a fresh scrape, open that order’s details page on Amazon, then click **Scrape this order**. The extension scrapes that page even if the order is already catalogued. Click **Send to Spendable** to re-import it. That updates the local cache for that order only; you do not need to clear the whole cache.
 
 ### Send to Spendable
 

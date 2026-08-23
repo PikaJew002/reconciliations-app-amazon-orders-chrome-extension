@@ -28,6 +28,19 @@ if (
 }
 
 (async () => {
+	try {
+		const [tab] = await chrome.tabs.query({
+			active: true,
+			currentWindow: true,
+		});
+
+		if (isAmazonOrderDetailsPage(tab?.url)) {
+			scrapeButton.textContent = 'Scrape this order';
+		}
+	} catch {
+		// Fall through with the default button label.
+	}
+
 	const { reconciliationsToken } = await chrome.storage.local.get(
 		'reconciliationsToken',
 	);
@@ -69,13 +82,15 @@ scrapeButton.addEventListener('click', async () => {
 			throw new Error('Could not determine the active tab.');
 		}
 
-		if (!isAmazonOrdersPage(tab.url)) {
+		if (!isAmazonOrdersPage(tab.url) && !isAmazonOrderDetailsPage(tab.url)) {
 			throw new Error(
-				'The current tab does not appear to be an Amazon Your Orders page.',
+				'The current tab does not appear to be an Amazon Your Orders or order details page.',
 			);
 		}
 
-		statusElement.textContent = 'Scraping orders. This may take a while...';
+		statusElement.textContent = isAmazonOrderDetailsPage(tab.url)
+			? 'Scraping this order...'
+			: 'Scraping orders. This may take a while...';
 
 		const response = await sendRuntimeMessage({
 			type: 'START_SCRAPE',
@@ -280,6 +295,12 @@ function formatScrapeStats(stats) {
 		return 'Scrape complete.';
 	}
 
+	if (stats.mode === 'details') {
+		return stats.orderNumber
+			? `Scraped order ${stats.orderNumber}.`
+			: 'Scraped this order.';
+	}
+
 	const parts = [`${stats.onPage} on this page`];
 
 	if (stats.catalogued) {
@@ -347,6 +368,26 @@ function isAmazonOrdersPage(url) {
 			parsed.pathname === '/gp/your-account/order-history/' ||
 			parsed.pathname === '/your-orders/orders')
 	);
+}
+
+function isAmazonOrderDetailsPage(url) {
+	if (!url) {
+		return false;
+	}
+
+	try {
+		const parsed = new URL(url);
+
+		return (
+			parsed.hostname === 'www.amazon.com' &&
+			parsed.searchParams.has('orderID') &&
+			(parsed.pathname === '/your-orders/order-details' ||
+				parsed.pathname === '/gp/your-account/order-details' ||
+				parsed.pathname === '/gp/css/order-details')
+		);
+	} catch {
+		return false;
+	}
 }
 
 async function connectToSpendable() {

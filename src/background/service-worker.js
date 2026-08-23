@@ -67,6 +67,12 @@ async function startScrapeJob(sourceTabId) {
 		throw new Error('No source tab ID was provided.');
 	}
 
+	const tab = await chrome.tabs.get(sourceTabId);
+
+	if (isAmazonOrderDetailsPage(tab.url)) {
+		return scrapeCurrentDetailsPage(sourceTabId, tab.url);
+	}
+
 	const registry = await reconcilePendingOrders();
 
 	const summaryResponse = await sendTabMessage(sourceTabId, {
@@ -103,6 +109,82 @@ async function startScrapeJob(sourceTabId) {
 			scraped: detailUrls.length,
 		},
 	};
+}
+
+async function scrapeCurrentDetailsPage(tabId, detailUrl) {
+	if (scrapeJob) {
+		throw new Error('A scrape is already in progress.');
+	}
+
+	scrapeJob = {
+		scrapeTabId: tabId,
+		startedAt: new Date().toISOString(),
+	};
+
+	try {
+		await waitForDetailsPage(tabId);
+
+		const response = await sendTabMessage(tabId, {
+			type: 'SCRAPE_DETAILS',
+		});
+
+		if (!response?.success) {
+			throw new Error(
+				response?.error || 'Failed to scrape the order details page.',
+			);
+		}
+
+		const data = response.data;
+		const url = data?.url || detailUrl;
+
+		if (!data?.orderNumber) {
+			throw new Error('Could not determine the order number on this page.');
+		}
+
+		const summary = {
+			page: 'details',
+			url,
+			scrapedAt: data.scrapedAt ?? new Date().toISOString(),
+			orderCount: 1,
+			orders: [
+				{
+					orderNumber: data.orderNumber,
+					orderDate: data.orderDate ?? null,
+					total:
+						data.summary?.grand_total ??
+						data.summary?.order_total ??
+						data.summary?.total ??
+						null,
+					status: data.shipments?.[0]?.status ?? null,
+					detailUrl: url,
+				},
+			],
+		};
+
+		return {
+			scrapedAt: new Date().toISOString(),
+			summary,
+			details: [
+				{
+					success: true,
+					orderNumber: data.orderNumber,
+					url,
+					data,
+				},
+			],
+			stats: {
+				mode: 'details',
+				orderNumber: data.orderNumber,
+				onPage: 1,
+				catalogued: 0,
+				pending: 0,
+				failed: 0,
+				scraped: 1,
+			},
+		};
+	} finally {
+		scrapeJob = null;
+	}
 }
 
 async function retryFailedOrders() {
@@ -296,6 +378,26 @@ async function scrapeDetailPages(tabId, summary, detailUrls) {
 	}
 
 	return details;
+}
+
+function isAmazonOrderDetailsPage(url) {
+	if (!url) {
+		return false;
+	}
+
+	try {
+		const parsed = new URL(url);
+
+		return (
+			parsed.hostname === 'www.amazon.com' &&
+			parsed.searchParams.has('orderID') &&
+			(parsed.pathname === '/your-orders/order-details' ||
+				parsed.pathname === '/gp/your-account/order-details' ||
+				parsed.pathname === '/gp/css/order-details')
+		);
+	} catch {
+		return false;
+	}
 }
 
 function uniqueDetailUrls(orders) {
