@@ -316,7 +316,8 @@ function isAmazonOrdersPage(url) {
 
 	return (
 		parsed.hostname === 'www.amazon.com' &&
-		parsed.pathname === '/gp/css/order-history'
+		(parsed.pathname === '/gp/css/order-history' ||
+			parsed.pathname === '/your-orders/orders')
 	);
 }
 

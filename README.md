@@ -26,7 +26,7 @@ If you are connected to Spendable, orders that already imported successfully are
 
 - Google Chrome (Manifest V3)
 - An Amazon.com account, signed in
-- The active tab must be `https://www.amazon.com/gp/css/order-history`
+- The active tab must be `https://www.amazon.com/gp/css/order-history` or `https://www.amazon.com/your-orders/orders`
 - Optional: a [Spendable](https://reconciliations.laravel.cloud/login) account, to import scraped orders
 
 The extension only runs on `https://www.amazon.com/*`. It does not paginate through older order history on its own; it scrapes whatever orders are currently visible on the summary page.
