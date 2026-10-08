@@ -7,7 +7,7 @@ function scrapeAmazonDetails() {
 		orderNumber: getOrderNumber(),
 		orderDate: getOrderDate(),
 
-		paymentMethod: getPaymentMethod(),
+		paymentMethods: getPaymentMethods(),
 
 		summary: getOrderSummary(),
 
@@ -44,23 +44,82 @@ function getOrderDate() {
 	return getText('[data-component="orderDate"]');
 }
 
-function getPaymentMethod() {
+function getPaymentMethods() {
 	const component = document.querySelector(
 		'[data-component="viewPaymentPlanSummaryWidget"]',
 	);
 
 	if (!component) {
+		return [];
+	}
+
+	const instruments = component.querySelectorAll(
+		'[data-testid="payment-instrument"]',
+	);
+
+	if (instruments.length) {
+		return Array.from(instruments)
+			.map(getPaymentInstrument)
+			.filter(Boolean);
+	}
+
+	return Array.from(
+		component.querySelectorAll(
+			'.pmts-payments-instrument-detail-box-paystationpaymentmethod',
+		),
+	)
+		.map(getLegacyPaymentInstrument)
+		.filter(Boolean);
+}
+
+function getPaymentInstrument(instrument) {
+	const name = getTextFrom(
+		instrument,
+		'[data-testid="payment-instrument-name"]',
+	);
+
+	const lastFour = normalizeLastFour(
+		getTextFrom(instrument, '[data-testid="payment-instrument-number"]'),
+	);
+
+	if (!name && !lastFour) {
 		return null;
 	}
 
-	return (
-		component
-			.querySelector(
-				'.pmts-payments-instrument-detail-box-paystationpaymentmethod',
-			)
-			?.textContent.replace(/\s+/g, ' ')
-			.trim() ?? null
-	);
+	return {
+		name,
+		lastFour,
+	};
+}
+
+function getLegacyPaymentInstrument(instrument) {
+	const label = instrument.textContent.replace(/\s+/g, ' ').trim();
+
+	if (!label) {
+		return null;
+	}
+
+	const lastFour = normalizeLastFour(label.match(/(\d{4})\s*$/)?.[1] ?? null);
+
+	const name = label
+		.replace(/(?:ending in\s+|[•*]+\s*)?\d{4}\s*$/i, '')
+		.replace(/\s+/g, ' ')
+		.trim();
+
+	return {
+		name: name || label,
+		lastFour,
+	};
+}
+
+function normalizeLastFour(value) {
+	const digits = value?.replace(/\D/g, '') ?? '';
+
+	if (digits.length < 4) {
+		return null;
+	}
+
+	return digits.slice(-4);
 }
 
 function getOrderSummary() {
